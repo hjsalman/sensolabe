@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Sensolabe App</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: a desktop instrument app. Sidebar of senses, one live panel, chart-paper plots. Same brand tokens as the Sensolabe site. */
+:root{
+  --bg:#EDF1F4; --paper:#F8FAFB; --sheet:#E2E8ED; --ink:#0E1A28; --muted:#526173; --rule:#C9D2DB;
+  --pulse:#D7263D; --grid:#F1C3CA; --grid-strong:#E59AA5; --sonar:#0D8A87; --mic:#C77700; --ok:#1E8C4E;
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0C131B; --paper:#121B25; --sheet:#18232F; --ink:#E3EAF1; --muted:#93A3B5; --rule:#263443;
+  --pulse:#FF5468; --grid:#2E2029; --grid-strong:#4A2C38; --sonar:#2CC7C2; --mic:#F0A63A; --ok:#4CC57E; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0C131B; --paper:#121B25; --sheet:#18232F; --ink:#E3EAF1; --muted:#93A3B5; --rule:#263443;
+  --pulse:#FF5468; --grid:#2E2029; --grid-strong:#4A2C38; --sonar:#2CC7C2; --mic:#F0A63A; --ok:#4CC57E; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);margin:0}
+p{margin:0}
+:focus-visible{outline:2px solid var(--pulse);outline-offset:2px}
+.label{font:500 11.5px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}
+.app{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;padding-block:18px}
+@media (max-width:860px){.app{grid-template-columns:minmax(0,1fr)}}
+
+/* sidebar */
+.side{display:grid;gap:14px;align-content:start;position:sticky;top:18px}
+@media (max-width:860px){.side{position:static}}
+.brand{display:flex;align-items:center;gap:10px;font:760 20px var(--f-display);padding:4px 6px}
+.brand svg{width:30px;height:30px}
+.navs{display:grid;gap:4px}
+@media (max-width:860px){.navs{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.navs button{display:flex;gap:10px;align-items:center;text-align:left;font:600 14.5px var(--f-body);padding:10px 12px;border-radius:12px;border:0;background:transparent;color:var(--ink);cursor:pointer}
+.navs button svg{width:18px;height:18px;flex:none}
+.navs button[aria-selected="true"]{background:var(--paper);box-shadow:0 0 0 1px var(--rule)}
+@media (max-width:860px){.navs button{flex-direction:column;gap:4px;font-size:12.5px;padding:8px 4px;text-align:center;justify-content:center}}
+.privacy{font-size:12.5px;color:var(--muted);padding:12px;border-radius:12px;border:1px dashed var(--rule);display:grid;gap:4px}
+.privacy b{color:var(--ink);font-weight:600}
+@media (max-width:860px){.privacy{display:none}}
+
+/* panels */
+.view{display:grid;gap:16px;min-width:0}
+.view[hidden]{display:none!important}
+.vhead{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap}
+.vhead h1{font-size:30px;font-weight:760;letter-spacing:-.02em}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:18px;min-width:0}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px}
+@media (max-width:1000px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.btn{font:600 14px var(--f-body);padding:9px 15px;border-radius:999px;border:1.5px solid var(--rule);background:var(--paper);color:var(--ink);cursor:pointer;display:inline-flex;gap:8px;align-items:center}
+.btn.primary{background:var(--pulse);border-color:var(--pulse);color:#fff}
+.btn[aria-pressed="true"]{border-color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.filebtn{position:relative;overflow:hidden}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+.stage{position:relative;aspect-ratio:4/3;max-width:100%;border-radius:14px;overflow:hidden;background:var(--sheet);cursor:crosshair}
+.stage video,.stage canvas.view3{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.stage video{transform:scaleX(-1)}
+.stage .roi{position:absolute;border:2px solid var(--pulse);border-radius:8px;pointer-events:none;transition:left .15s,top .15s,width .15s,height .15s}
+.stage .tagline{position:absolute;left:10px;bottom:10px;font:500 11.5px var(--f-mono);background:var(--paper);color:var(--ink);padding:3px 8px;border-radius:6px}
+.srcpad{padding:14px;display:grid;gap:12px}
+.msg{font-size:13.5px;color:var(--muted)}
+.msg.warn{color:var(--mic)}
+
+.readouts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-bottom:1px solid var(--rule)}
+.readouts div{padding:16px 18px;border-right:1px solid var(--rule);display:grid;gap:4px;min-width:0}
+.readouts div:last-child{border-right:0}
+.big{font:800 clamp(40px,5vw,60px)/1 var(--f-display);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.big small{font:600 13px var(--f-mono);color:var(--muted);margin-left:4px;letter-spacing:0}
+.mid{font:760 28px/1 var(--f-display);font-variant-numeric:tabular-nums}
+.qbar{height:7px;border-radius:4px;background:var(--sheet);overflow:hidden;margin-top:6px}
+.qbar i{display:block;height:100%;width:0;background:var(--sonar);transition:width .4s}
+@media (max-width:520px){.readouts{grid-template-columns:minmax(0,1fr)}.readouts div{border-right:0;border-bottom:1px solid var(--rule)}}
+.plot{padding:10px 18px;display:grid;gap:4px}
+.plot canvas{width:100%;height:110px;display:block;border-radius:6px}
+.plot .label{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.foot{padding:12px 18px;border-top:1px solid var(--rule);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* sonar */
+.status{display:flex;align-items:center;gap:12px;padding:18px}
+.dot{width:16px;height:16px;border-radius:50%;background:var(--muted);flex:none}
+.status b{font:760 24px var(--f-display)}
+.meter{height:14px;border-radius:7px;background:var(--sheet);overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:var(--sonar);transition:width .1s}
+.field{display:grid;gap:6px;font-size:14px}
+.field input[type=range]{width:100%}
+
+/* history */
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}
+th,td{text-align:left;padding:11px 16px;border-bottom:1px solid var(--rule)}
+th{font:600 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+td.num{font-variant-numeric:tabular-nums;font-weight:600}
+.empty{padding:28px 18px;color:var(--muted)}
+.disclaimer{font-size:12.5px;color:var(--muted)}
+a{color:var(--sonar)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="app">
+  <aside class="side">
+    <a class="brand" href="index.html" style="text-decoration:none;color:inherit">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 3v4M20 33v4M3 20h4M33 20h4" stroke="currentColor" stroke-width="2"/><path d="M7 21h7l2.5-6 4 13 3-10 2 3h7.5" fill="none" stroke="var(--pulse)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/></svg>
+      Sensolabe
+    </a>
+    <nav class="navs" role="tablist" aria-label="Senses">
+      <button type="button" role="tab" data-v="pulse" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>Pulse</button>
+      <button type="button" role="tab" data-v="presence" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/></svg>Presence</button>
+      <button type="button" role="tab" data-v="history" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>History</button>
+      <button type="button" role="tab" data-v="about" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Privacy</button>
+    </nav>
+    <div class="privacy"><b>Runs on this computer.</b>Video and sound are processed in this page and never uploaded. There is no server.</div>
+  </aside>
+
+  <main>
+    <!-- PULSE -->
+    <section class="view" id="v-pulse">
+      <div class="vhead"><div><span class="label">Camera sense</span><h1>Pulse and breathing</h1></div><span class="msg" id="srcState">Source: demo</span></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="stage" id="stage" title="Click to place the measuring box by hand">
+            <video id="vid" muted playsinline hidden></video>
+            <canvas class="view3" id="demoCanvas" aria-label="Demo face"></canvas>
+            <div class="roi" id="roi"></div>
+            <span class="tagline" id="tagline">demo signal</span>
+          </div>
+          <div class="srcpad">
+            <div class="row">
+              <button class="btn primary" type="button" id="camBtn">Use camera</button>
+              <label class="btn filebtn" for="fileIn">Open video<input type="file" id="fileIn" accept="video/*"></label>
+              <button class="btn" type="button" id="demoBtn" aria-pressed="true">Demo</button>
+            </div>
+            <label class="row msg" for="autoRoi"><input type="checkbox" id="autoRoi" checked> Find the face automatically</label>
+            <p class="msg" id="srcMsg">The demo feeds a simulated face signal through the real measuring code. Use your camera or open a 20 to 30 second video of your face to measure yourself. Sit still in good light.</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="readouts">
+            <div><span class="label">Pulse</span><div class="big" id="bpm">--<small>BPM</small></div></div>
+            <div><span class="label">Breathing · beta</span><div class="mid" id="br">--</div><span class="msg">per minute</span></div>
+            <div><span class="label">Signal</span><div class="mid" id="qual">--</div><div class="qbar"><i id="qbar"></i></div></div>
+          </div>
+          <div class="plot"><div class="label"><span>Pulse wave</span><span id="winTxt">last 15 s</span></div><canvas id="pulsePlot"></canvas></div>
+          <div class="plot"><div class="label"><span>Spectrum 42 to 180 BPM</span><span id="peakTxt"></span></div><canvas id="specPlot"></canvas></div>
+          <div class="foot">
+            <span class="msg" id="collect">Collecting signal…</span>
+            <button class="btn" type="button" id="saveBtn" disabled>Save reading</button>
+          </div>
+        </div>
+      </div>
+      <p class="disclaimer">Not a medical device. Readings are estimates from color changes in the skin and can be wrong with motion, dim light, makeup or some skin tones. Don't use them to make health decisions.</p>
+    </section>
+
+    <!-- PRESENCE -->
+    <section class="view" id="v-presence" hidden>
+      <div class="vhead"><div><span class="label">Sonar sense</span><h1>Presence</h1></div></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="status"><span class="dot" id="pDot"></span><div><b id="pState">Off</b><p class="msg" id="pSub">Start sonar to watch for movement in front of the computer.</p></div></div>
+          <div class="srcpad">
+            <div class="row"><button class="btn primary" type="button" id="sonarBtn">Start sonar</button><button class="btn" type="button" id="simBtn" aria-pressed="false">Simulate</button></div>
+            <div class="field"><span class="label">Movement</span><div class="meter"><i id="meter"></i></div></div>
+            <div class="field"><label for="lockSec">Mark as away after <b id="lockVal">15</b> s without movement</label><input type="range" id="lockSec" min="5" max="60" value="15"></div>
+            <div class="field"><label for="vol">Tone volume <b id="volVal">20%</b></label><input type="range" id="vol" min="5" max="60" value="20"></div>
+            <p class="msg" id="sonarMsg">Plays a 19 kHz tone through the speakers, which most adults can't hear, and listens with the microphone. Movement shifts the echo's pitch slightly (the Doppler effect), which shows as spread around the tone below. Children and pets may hear it.</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="plot" style="padding-top:16px"><div class="label"><span>Microphone spectrum, 18.6 to 19.4 kHz</span><span id="sideTxt"></span></div><canvas id="sonarPlot" style="height:220px"></canvas></div>
+          <div class="plot" style="padding-bottom:16px"><div class="label"><span>Movement over the last 30 s</span></div><canvas id="motionPlot"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="view" id="v-history" hidden>
+      <div class="vhead"><div><span class="label">Saved on this computer</span><h1>History</h1></div><button class="btn" type="button" id="clearBtn">Clear history</button></div>
+      <div class="card"><div class="tablewrap" id="histWrap"></div></div>
+      <p class="disclaimer">History lives in this browser's storage only. Clearing site data removes it.</p>
+    </section>
+
+    <!-- ABOUT -->
+    <section class="view" id="v-about" hidden>
+      <div class="vhead"><div><span class="label">How it works</span><h1>Privacy and method</h1></div></div>
+      <div class="card" style="padding:20px;display:grid;gap:14px;max-width:72ch">
+        <p><b>Nothing leaves this page.</b> Frames from the camera or video file are shrunk to 160 pixels wide and averaged into three numbers per frame: red, green and blue. The picture itself is never stored or sent anywhere.</p>
+        <p><b>Pulse.</b> Each heartbeat pushes blood into the skin, which absorbs slightly more green light. The app averages the color of the cheeks and forehead, separates the pulse from lighting changes with a color projection called POS (plane orthogonal to skin), filters to 42 to 180 beats per minute and finds the strongest rhythm.</p>
+        <p><b>Breathing (beta).</b> Breathing moves the head and chest slightly, which changes the overall brightness of the box. The app looks for the strongest rhythm between 6 and 30 breaths per minute. Treat it as experimental.</p>
+        <p><b>Presence.</b> The speakers play a steady 19 kHz tone and the microphone listens. A still room reflects the tone at the same pitch; anything moving shifts it slightly up or down. The app measures that spread.</p>
+        <p><b>Face finding.</b> Skin-colored pixels are located in each frame and the measuring box follows the upper middle of the face. Click the picture to place it yourself.</p>
+        <p class="disclaimer">Sensolabe is a concept-stage project from Columbia, South Carolina. Contact: <span style="user-select:all">hsalman@email.sc.edu</span></p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+(function(){
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = id => document.getElementById(id);
+
+/* ---------- navigation ---------- */
+const tabs = [...document.querySelectorAll('.navs button')];
+function show(v){ tabs.forEach(b => b.setAttribute('aria-selected', b.dataset.v===v)); document.querySelectorAll('.view').forEach(s => s.hidden = s.id !== 'v-'+v); if (v==='history') renderHistory(); try{ localStorage.setItem('sensolabe.view', v); }catch(e){} }
+tabs.forEach(b => b.onclick = () => show(b.dataset.v));
+
+/* ---------- DSP ---------- */
+function fft(re, im, inv){ const n = re.length;
+  for (let i=1,j=0;i<n;i++){ let bit=n>>1; for(;j&bit;bit>>=1) j^=bit; j^=bit; if(i<j){ [re[i],re[j]]=[re[j],re[i]]; [im[i],im[j]]=[im[j],im[i]]; } }
+  for (let len=2; len<=n; len<<=1){ const ang=2*Math.PI/len*(inv?1:-1), wr=Math.cos(ang), wi=Math.sin(ang);
+    for (let i=0;i<n;i+=len){ let cr=1,ci=0; for (let k=0;k<len/2;k++){ const a=i+k,b=a+len/2; const xr=re[b]*cr-im[b]*ci, xi=re[b]*ci+im[b]*cr; re[b]=re[a]-xr; im[b]=im[a]-xi; re[a]+=xr; im[a]+=xi; const t=cr*wr-ci*wi; ci=cr*wi+ci*wr; cr=t; } } }
+  if (inv) for (let i=0;i<n;i++){ re[i]/=n; im[i]/=n; } }
+const mean = a => { let s=0; for (const x of a) s+=x; return s/a.length; };
+const std = a => { const m=mean(a); let s=0; for (const x of a) s+=(x-m)*(x-m); return Math.sqrt(s/a.length)||1e-9; };
+const pow2 = n => { let p=1; while(p<n) p<<=1; return p; };
+function resample(t, chans, fs){ const t0=t[0], N=Math.floor((t[t.length-1]-t0)*fs); const out=chans.map(()=>new Float64Array(N)); let k=0;
+  for (let i=0;i<N;i++){ const tt=t0+i/fs; while(k<t.length-2 && t[k+1]<tt) k++; const w=Math.min(1,Math.max(0,(tt-t[k])/((t[k+1]-t[k])||1))); chans.forEach((c,ci)=> out[ci][i]=c[k]*(1-w)+c[k+1]*w); }
+  return out; }
+function bandPeak(sig, fs, f1, f2, pad){ const N=sig.length, P=pow2(N*pad), re=new Float64Array(P), im=new Float64Array(P); const m=mean(sig);
+  for (let i=0;i<N;i++) re[i]=(sig[i]-m)*(0.5-0.5*Math.cos(2*Math.PI*i/(N-1)));
+  fft(re,im,false); const fr=[], mg=[]; let pk=0, pi=-1, tot=0;
+  for (let i=0;i<P/2;i++){ const f=i*fs/P; if (f<f1||f>f2) continue; const v=Math.hypot(re[i],im[i]); fr.push(f*60); mg.push(v); tot+=v*v; if (v>pk){pk=v;pi=mg.length-1;} }
+  let val=fr[pi]; if (pi>0 && pi<mg.length-1){ const a=mg[pi-1],b=mg[pi],c=mg[pi+1]; val += 0.5*(a-c)/((a-2*b+c)||1e-9)*(fr[1]-fr[0]); }
+  let near=0; mg.forEach((v,i)=>{ if (Math.abs(fr[i]-fr[pi]) < (f2>1?7:2.5)) near+=v*v; });
+  return {val, conf:Math.max(0,Math.min(1,(near/tot-0.15)/0.6)), fr, mg, pi}; }
+function analyze(t, R, G, B){
+  const fs=30; if (t.length<2 || t[t.length-1]-t[0] < 8) return null;
+  const [r,g,b] = resample(t,[R,G,B],fs), N=r.length, l=Math.round(1.6*fs), H=new Float64Array(N);
+  for (let n=0;n+l<=N;n++){ const mr=mean(r.subarray(n,n+l)), mg=mean(g.subarray(n,n+l)), mb=mean(b.subarray(n,n+l)); const s1=new Float64Array(l), s2=new Float64Array(l);
+    for (let i=0;i<l;i++){ const rr=r[n+i]/mr, gg=g[n+i]/mg, bb=b[n+i]/mb; s1[i]=gg-bb; s2[i]=-2*rr+gg+bb; }
+    const al=std(s1)/std(s2); let hm=0; const h=new Float64Array(l); for (let i=0;i<l;i++){ h[i]=s1[i]+al*s2[i]; hm+=h[i]; } hm/=l; for (let i=0;i<l;i++) H[n+i]+=h[i]-hm; }
+  // filtered wave for display
+  const M=pow2(N), re=new Float64Array(M), im=new Float64Array(M); const hmn=mean(H); for (let i=0;i<N;i++) re[i]=H[i]-hmn;
+  fft(re,im,false); for (let i=0;i<M;i++){ const f=(i<=M/2?i:M-i)*fs/M; if (f<0.7||f>3){ re[i]=0; im[i]=0; } } fft(re,im,true);
+  const wave = Array.from(re.subarray(0,N));
+  const p = bandPeak(wave, fs, 0.7, 3.0, 8);
+  // breathing from overall brightness
+  const lum = new Float64Array(N); for (let i=0;i<N;i++) lum[i]=(r[i]+g[i]+b[i])/3;
+  const br = (N/fs >= 12) ? bandPeak(lum, fs, 0.1, 0.5, 8) : null;
+  return {bpm:p.val, conf:p.conf, wave, mags:p.mg, pi:p.pi, br: br && br.conf > .25 ? br.val : null};
+}
+
+/* ---------- plots ---------- */
+function setup(c){ const r=c.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); c.width=Math.max(10,Math.round(r.width*d)); c.height=Math.max(10,Math.round(r.height*d)); const x=c.getContext('2d'); x.setTransform(d,0,0,d,0,0); return [x,r.width,r.height]; }
+function paper(x,w,h){ x.fillStyle=css('--paper'); x.fillRect(0,0,w,h); x.lineWidth=1;
+  for (let i=0;i<=w;i+=6){ x.strokeStyle=(Math.round(i/6)%5===0)?css('--grid-strong'):css('--grid'); x.beginPath(); x.moveTo(i+.5,0); x.lineTo(i+.5,h); x.stroke(); }
+  for (let j=0;j<=h;j+=6){ x.strokeStyle=(Math.round(j/6)%5===0)?css('--grid-strong'):css('--grid'); x.beginPath(); x.moveTo(0,j+.5); x.lineTo(w,j+.5); x.stroke(); } }
+function line(c, data, color, peak, fixed){ const [x,w,h]=setup(c); paper(x,w,h); if (!data || data.length<2) return;
+  let lo=Infinity, hi=-Infinity; if (fixed){ [lo,hi]=fixed; } else { for (const v of data){ if(v<lo)lo=v; if(v>hi)hi=v; } const p=(hi-lo)*.12||1; lo-=p; hi+=p; }
+  x.strokeStyle=css(color); x.lineWidth=2; x.lineJoin='round'; x.beginPath(); data.forEach((v,i)=>{ const px=i/(data.length-1)*w, py=h-(Math.min(hi,Math.max(lo,v))-lo)/(hi-lo)*h; i?x.lineTo(px,py):x.moveTo(px,py); }); x.stroke();
+  if (peak!=null){ const px=peak/(data.length-1)*w; x.setLineDash([4,4]); x.strokeStyle=css('--ink'); x.lineWidth=1; x.beginPath(); x.moveTo(px,0); x.lineTo(px,h); x.stroke(); x.setLineDash([]); } }
+
+/* ---------- pulse: sources ---------- */
+const vid=$('vid'), stage=$('stage'), roiEl=$('roi'), demoC=$('demoCanvas'), dx=demoC.getContext('2d');
+const work=document.createElement('canvas'); work.width=160; work.height=120; const wx=work.getContext('2d',{willReadFrequently:true});
+let source='demo', stream=null, roi={x:.37,y:.22,w:.26,h:.2}, manual=false;
+let T=[], R=[], G=[], B=[], last=null, demoPh=0, demoT=0;
+const WIN=15;
+function placeRoi(){ roiEl.style.left=roi.x*100+'%'; roiEl.style.top=roi.y*100+'%'; roiEl.style.width=roi.w*100+'%'; roiEl.style.height=roi.h*100+'%'; }
+placeRoi();
+stage.addEventListener('click', e => { const r=stage.getBoundingClientRect(); const cx=(e.clientX-r.left)/r.width, cy=(e.clientY-r.top)/r.height; roi.x=Math.min(1-roi.w,Math.max(0,cx-roi.w/2)); roi.y=Math.min(1-roi.h,Math.max(0,cy-roi.h/2)); manual=true; $('autoRoi').checked=false; placeRoi(); });
+$('autoRoi').onchange = e => { manual = !e.target.checked; };
+function resetSignal(){ T=[];R=[];G=[];B=[]; last=null; $('bpm').innerHTML='--<small>BPM</small>'; $('br').textContent='--'; $('qual').textContent='--'; $('qbar').style.width='0'; $('saveBtn').disabled=true; $('collect').textContent='Collecting signal…'; line($('pulsePlot'),null); line($('specPlot'),null); }
+function stopCam(){ if (stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } }
+function setSource(s, label){ source=s; $('srcState').textContent='Source: '+label; $('tagline').textContent = s==='demo' ? 'demo signal' : s==='camera' ? 'live camera · mirrored' : 'video file'; $('demoBtn').setAttribute('aria-pressed', s==='demo'); demoC.hidden = s!=='demo'; vid.hidden = s==='demo'; vid.style.transform = s==='camera' ? 'scaleX(-1)' : 'none'; resetSignal(); }
+
+$('demoBtn').onclick = () => { stopCam(); vid.pause(); setSource('demo','demo'); $('srcMsg').textContent='The demo feeds a simulated face signal through the real measuring code. True rate drifts around 68 to 76 BPM with 15 breaths a minute.'; };
+$('camBtn').onclick = async () => {
+  const msg=$('srcMsg');
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ msg.className='msg warn'; msg.textContent='This browser does not allow camera access here. Open a video file instead.'; return; }
+  try { stopCam(); stream = await navigator.mediaDevices.getUserMedia({video:{width:640,height:480,facingMode:'user'},audio:false});
+    vid.srcObject=stream; vid.src=''; await vid.play(); setSource('camera','camera'); msg.className='msg'; msg.textContent='Measuring live. Sit still, face the screen, in steady light. A reading appears after about 8 seconds.';
+  } catch(e){ msg.className='msg warn'; msg.textContent='The camera is blocked here ('+(e.name||'not allowed')+'). Allow camera access in your browser's address bar and try again, or open a video file instead.'; }
+};
+$('fileIn').onchange = e => { const f=e.target.files[0]; if (!f) return; stopCam(); vid.srcObject=null; vid.src=URL.createObjectURL(f); vid.loop=false; setSource('file', f.name);
+  vid.onerror = () => { $('srcMsg').className='msg warn'; $('srcMsg').textContent='This browser could not play that file. Try an MP4.'; };
+  vid.play().then(()=>{ $('srcMsg').className='msg'; $('srcMsg').textContent='Measuring the video at normal speed. Keep this tab open.'; }).catch(()=>{});
+  vid.onended = () => { $('collect').textContent = last ? 'Video finished. Final reading shown.' : 'Video too short. It needs at least 8 seconds.'; };
+};
+
+/* skin finder */
+function findFace(d, W, H){ let sx=0, sy=0, n=0, minY=H, maxY=0, minX=W, maxX=0;
+  for (let y=0;y<H;y+=2) for (let x=0;x<W;x+=2){ const i=(y*W+x)*4, r=d[i], g=d[i+1], b=d[i+2]; const cb=128-.168736*r-.331264*g+.5*b, cr=128+.5*r-.418688*g-.081312*b; if (cr>137&&cr<175&&cb>80&&cb<128&&r>60){ sx+=x; sy+=y; n++; if(y<minY)minY=y; if(y>maxY)maxY=y; if(x<minX)minX=x; if(x>maxX)maxX=x; } }
+  if (n < (W*H/4)*0.03) return null;
+  const cx=sx/n/W, fw=Math.min(.6,(maxX-minX)/W), fh=Math.min(.8,(maxY-minY)/H), top=minY/H;
+  return {x:cx-fw*.3, y:top+fh*.18, w:fw*.6, h:fh*.28}; }
+
+/* demo renderer: draws a face for show; the signal itself is simulated and fed to the same analysis */
+function gauss(){ return Math.sqrt(-2*Math.log(Math.random()+1e-12))*Math.cos(2*Math.PI*Math.random()); }
+function drawDemo(level){ const r=demoC.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); if (demoC.width!==Math.round(r.width*d)){ demoC.width=Math.round(r.width*d); demoC.height=Math.round(r.height*d); } dx.setTransform(d,0,0,d,0,0); const w=r.width,h=r.height;
+  dx.fillStyle=css('--sheet'); dx.fillRect(0,0,w,h); dx.fillStyle=css('--muted'); dx.globalAlpha=.25; dx.beginPath(); dx.ellipse(w/2,h*1.05,w*.36,h*.32,0,0,Math.PI*2); dx.fill(); dx.globalAlpha=1;
+  dx.fillStyle=`rgb(${Math.round(198+level*10)},${Math.round(150+level*18)},${Math.round(128+level*5)})`; dx.beginPath(); dx.ellipse(w/2,h*.45,w*.19,h*.32,0,0,Math.PI*2); dx.fill();
+  dx.fillStyle=css('--ink'); dx.globalAlpha=.55; [-.07,.07].forEach(o=>{ dx.beginPath(); dx.ellipse(w/2+o*w,h*.42,5,3.5,0,0,Math.PI*2); dx.fill(); }); dx.lineWidth=2; dx.strokeStyle=css('--ink'); dx.beginPath(); dx.arc(w/2,h*.58,w*.05,.15*Math.PI,.85*Math.PI); dx.stroke(); dx.globalAlpha=1; }
+
+/* main sampling loop */
+let lastAnalyze=0, lastFrameT=-1;
+function sample(now){
+  requestAnimationFrame(sample);
+  const pulseVisible = !$('v-pulse').hidden;
+  let t, rgb=null;
+  if (source==='demo'){
+    const tt=now/1000; const dt = demoT ? Math.min(.1, tt-demoT) : 1/30; demoT=tt; const hr=72+4*Math.sin(2*Math.PI*.03*tt); demoPh += 2*Math.PI*hr/60*dt;
+    const p=Math.sin(demoPh)+.35*Math.sin(2*demoPh-.8); const illum=1+.012*Math.sin(2*Math.PI*.015*tt)+.008*Math.sin(2*Math.PI*.25*tt);
+    t=tt; rgb=[150*illum+.3*p+gauss()*.25, 108*illum+.65*p+gauss()*.25, 88*illum+.22*p+gauss()*.25];
+    if (pulseVisible) drawDemo(Math.max(0,p)*.6); roi={x:.4,y:.2,w:.2,h:.16}; placeRoi();
+  } else if (!vid.paused && vid.readyState>=2){
+    t = source==='file' ? vid.currentTime : now/1000; if (t===lastFrameT) return; lastFrameT=t;
+    const vw=vid.videoWidth, vh=vid.videoHeight; if (!vw) return; const bw=4/3; let sx=0,sy=0,sw=vw,sh=vh; if (vw/vh>bw){ sw=vh*bw; sx=(vw-sw)/2; } else { sh=vw/bw; sy=(vh-sh)/2; }
+    wx.save(); if (source==='camera'){ wx.translate(160,0); wx.scale(-1,1); } wx.drawImage(vid,sx,sy,sw,sh,0,0,160,120); wx.restore();
+    const full=wx.getImageData(0,0,160,120).data;
+    if (!manual && $('autoRoi').checked){ const f=findFace(full,160,120); if (f){ roi.x+= (f.x-roi.x)*.15; roi.y+=(f.y-roi.y)*.15; roi.w+=(f.w-roi.w)*.15; roi.h+=(f.h-roi.h)*.15; placeRoi(); } }
+    const x0=Math.max(0,Math.round(roi.x*160)), y0=Math.max(0,Math.round(roi.y*120)), w=Math.max(2,Math.round(roi.w*160)), h=Math.max(2,Math.round(roi.h*120));
+    let r=0,g=0,b=0,c=0; for (let y=y0;y<Math.min(120,y0+h);y++) for (let x=x0;x<Math.min(160,x0+w);x++){ const i=(y*160+x)*4; r+=full[i]; g+=full[i+1]; b+=full[i+2]; c++; }
+    if (c) rgb=[r/c,g/c,b/c];
+  }
+  if (!rgb) return;
+  if (T.length && t < T[T.length-1]) { resetSignal(); }
+  T.push(t); R.push(rgb[0]); G.push(rgb[1]); B.push(rgb[2]);
+  while (T.length && T[T.length-1]-T[0] > WIN+3){ T.shift(); R.shift(); G.shift(); B.shift(); }
+  if (now - lastAnalyze > 1000){ lastAnalyze = now; const i0 = T.findIndex(x => x >= T[T.length-1]-WIN); const res = analyze(T.slice(i0),R.slice(i0),G.slice(i0),B.slice(i0));
+    const span = T[T.length-1]-T[0];
+    if (!res){ $('collect').textContent = 'Collecting signal… '+Math.max(0,8-span).toFixed(0)+' s to first reading'; return; }
+    last = res; if (!pulseVisible) return;
+    $('bpm').innerHTML = Math.round(res.bpm)+'<small>BPM</small>';
+    $('br').textContent = res.br ? Math.round(res.br) : '--';
+    $('qual').textContent = res.conf>.6?'Good':res.conf>.3?'Fair':'Poor'; $('qbar').style.width=Math.round(res.conf*100)+'%';
+    $('peakTxt').textContent = 'peak '+res.bpm.toFixed(1)+' BPM';
+    $('winTxt').textContent = 'last '+Math.min(WIN,span).toFixed(0)+' s';
+    $('collect').textContent = res.conf>.3 ? 'Updating every second.' : 'Weak signal. Hold still, add light, or move the box onto bare skin.';
+    $('saveBtn').disabled = false;
+    line($('pulsePlot'), res.wave, '--pulse'); line($('specPlot'), res.mags, '--pulse', res.pi);
+  }
+}
+requestAnimationFrame(sample);
+
+/* ---------- history ---------- */
+function loadH(){ try{ return JSON.parse(localStorage.getItem('sensolabe.history')||'[]'); }catch(e){ return memH; } }
+let memH=[];
+function saveH(h){ memH=h; try{ localStorage.setItem('sensolabe.history', JSON.stringify(h)); }catch(e){} }
+$('saveBtn').onclick = () => { if (!last) return; const h=loadH(); h.unshift({at:Date.now(), bpm:Math.round(last.bpm), br:last.br?Math.round(last.br):null, q:last.conf, src:source}); saveH(h.slice(0,200)); $('collect').textContent='Saved to history.'; };
+$('clearBtn').onclick = () => { saveH([]); renderHistory(); };
+function renderHistory(){ const h=loadH(), w=$('histWrap'); w.innerHTML='';
+  if (!h.length){ const p=document.createElement('p'); p.className='empty'; p.textContent='No saved readings yet. Take a reading on the Pulse page and press Save reading.'; w.appendChild(p); return; }
+  const t=document.createElement('table'); t.innerHTML='<thead><tr><th>When</th><th>Pulse</th><th>Breathing</th><th>Signal</th><th>Source</th></tr></thead>'; const tb=document.createElement('tbody');
+  h.forEach(r=>{ const tr=document.createElement('tr'); [new Date(r.at).toLocaleString(), r.bpm+' BPM', r.br? r.br+' /min':'--', r.q>.6?'Good':r.q>.3?'Fair':'Poor', r.src].forEach((v,i)=>{ const td=document.createElement('td'); td.textContent=v; if(i===1||i===2) td.className='num'; tr.appendChild(td); }); tb.appendChild(tr); });
+  t.appendChild(tb); w.appendChild(t); }
+
+/* ---------- presence (sonar) ---------- */
+let ac=null, an=null, osc=null, gain=null, micStream=null, sim=false, baseline=null, lastMove=0, motionHist=[], sonarOn=false, startedAt=0;
+$('lockSec').oninput = e => $('lockVal').textContent = e.target.value;
+$('vol').oninput = e => { $('volVal').textContent = e.target.value+'%'; if (gain) gain.gain.value = e.target.value/100; };
+async function startSonar(){
+  const msg=$('sonarMsg');
+  if (sonarOn){ stopSonar(); return; }
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw {name:'NotSupported'};
+    micStream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    ac = new (window.AudioContext||window.webkitAudioContext)();
+    osc = ac.createOscillator(); osc.frequency.value = 19000; gain = ac.createGain(); gain.gain.value = $('vol').value/100; osc.connect(gain).connect(ac.destination); osc.start();
+    an = ac.createAnalyser(); an.fftSize = 8192; an.smoothingTimeConstant = 0; ac.createMediaStreamSource(micStream).connect(an);
+    sonarOn = true; sim = false; $('simBtn').setAttribute('aria-pressed', false); baseline=null; startedAt=performance.now(); lastMove=performance.now(); $('sonarBtn').textContent='Stop sonar';
+    msg.className='msg'; msg.textContent='Listening. Wave a hand or lean toward the screen and watch the spread around the tone grow. Calibrating for 3 seconds; keep still.';
+  } catch(e){ msg.className='msg warn'; msg.textContent='The microphone is blocked here ('+(e.name||'not allowed')+'). Allow microphone access in your browser's address bar and try again, or press Simulate to see how it behaves.'; }
+}
+function stopSonar(){ try{ osc && osc.stop(); }catch(e){} if (micStream) micStream.getTracks().forEach(t=>t.stop()); if (ac) ac.close(); ac=an=osc=gain=micStream=null; sonarOn=false; $('sonarBtn').textContent='Start sonar'; $('pState').textContent='Off'; $('pDot').style.background=css('--muted'); }
+$('sonarBtn').onclick = startSonar;
+$('simBtn').onclick = () => { if (sonarOn) stopSonar(); sim = !sim; $('simBtn').setAttribute('aria-pressed', sim); baseline=null; startedAt=performance.now(); lastMove=performance.now(); $('sonarMsg').className='msg'; $('sonarMsg').textContent = sim ? 'Simulation: a person moves now and then for 20 seconds, then leaves. Real sonar needs the microphone.' : 'Simulation stopped.'; if (!sim){ $('pState').textContent='Off'; $('pDot').style.background=css('--muted'); } };
+const SR_FALLBACK=48000, NB=4096;
+function sonarLoop(now){
+  requestAnimationFrame(sonarLoop);
+  if ($('v-presence').hidden || (!sonarOn && !sim)) return;
+  const sr = ac ? ac.sampleRate : SR_FALLBACK, binHz = sr/8192, k0 = Math.round(19000/binHz);
+  const lo = Math.round(18600/binHz), hi = Math.round(19400/binHz);
+  let spec = new Float32Array(hi-lo+1);
+  const el=(now-startedAt)/1000;
+  if (sonarOn){ const full=new Float32Array(an.frequencyBinCount); an.getFloatFrequencyData(full); for (let i=lo;i<=hi;i++) spec[i-lo]=full[i]; }
+  else { const present = el < 20; const moving = present && (Math.sin(el*1.3)>.2 || (el%7)<1.2); for (let i=lo;i<=hi;i++){ const d=Math.abs(i-k0); let v=-110+Math.random()*4; if (d===0) v=-30; else if (d===1) v=-55; if (moving && d>=2 && d<=14) v=Math.max(v,-70-d*1.6+Math.random()*6); spec[i-lo]=v; } }
+  // sideband energy
+  let side=0, n=0; for (let i=lo;i<=hi;i++){ const d=Math.abs(i-k0); if (d>=3 && d<=25){ side += Math.pow(10, spec[i-lo]/10); n++; } } side = 10*Math.log10(side/n + 1e-20);
+  if (el < 3){ baseline = baseline===null ? side : baseline*.9 + side*.1; }
+  const score = Math.max(0, Math.min(1, (side - (baseline ?? side) - 3)/15));
+  if (el >= 3 && score > .25) lastMove = now;
+  motionHist.push(score); if (motionHist.length>1800) motionHist.shift();
+  $('meter').style.width = Math.round(score*100)+'%';
+  const idle = (now-lastMove)/1000, lim = +$('lockSec').value;
+  let st, sub, col;
+  if (el < 3){ st='Calibrating'; sub='Keep still for a moment.'; col='--mic'; }
+  else if (idle < lim){ st='Someone is here'; sub = idle < 1 ? 'Movement right now' : 'Last movement '+idle.toFixed(0)+' s ago'; col='--ok'; }
+  else { st='Away'; sub='No movement for '+idle.toFixed(0)+' s. A laptop would lock the screen now.'; col='--muted'; }
+  $('pState').textContent=st; $('pSub').textContent=sub; $('pDot').style.background=css(col);
+  $('sideTxt').textContent = 'spread '+(side-(baseline??side)).toFixed(1)+' dB';
+  line($('sonarPlot'), Array.from(spec), '--sonar', k0-lo, [-120,-20]);
+  line($('motionPlot'), motionHist.slice(-1800), '--sonar', null, [0,1]);
+}
+requestAnimationFrame(sonarLoop);
+
+/* restore last view */
+let v0='pulse'; try{ v0 = localStorage.getItem('sensolabe.view') || 'pulse'; }catch(e){} if (!['pulse','presence','history','about'].includes(v0)) v0='pulse'; show(v0);
+})();
+</script>
+
+</body>
+</html>
