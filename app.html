@@ -287,7 +287,7 @@ $('camBtn').onclick = async () => {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ msg.className='msg warn'; msg.textContent='This browser does not allow camera access here. Open a video file instead.'; return; }
   try { stopCam(); stream = await navigator.mediaDevices.getUserMedia({video:{width:640,height:480,facingMode:'user'},audio:false});
     vid.srcObject=stream; vid.src=''; await vid.play(); setSource('camera','camera'); msg.className='msg'; msg.textContent='Measuring live. Sit still, face the screen, in steady light. A reading appears after about 8 seconds.';
-  } catch(e){ msg.className='msg warn'; msg.textContent='The camera is blocked here ('+(e.name||'not allowed')+'). Allow camera access in your browser's address bar and try again, or open a video file instead.'; }
+  } catch(e){ msg.className='msg warn'; msg.textContent='The camera is blocked here ('+(e.name||'not allowed')+'). Allow camera access in your browser address bar and try again, or open a video file instead.'; }
 };
 $('fileIn').onchange = e => { const f=e.target.files[0]; if (!f) return; stopCam(); vid.srcObject=null; vid.src=URL.createObjectURL(f); vid.loop=false; setSource('file', f.name);
   vid.onerror = () => { $('srcMsg').className='msg warn'; $('srcMsg').textContent='This browser could not play that file. Try an MP4.'; };
@@ -377,7 +377,7 @@ async function startSonar(){
     an = ac.createAnalyser(); an.fftSize = 8192; an.smoothingTimeConstant = 0; ac.createMediaStreamSource(micStream).connect(an);
     sonarOn = true; sim = false; $('simBtn').setAttribute('aria-pressed', false); baseline=null; startedAt=performance.now(); lastMove=performance.now(); $('sonarBtn').textContent='Stop sonar';
     msg.className='msg'; msg.textContent='Listening. Wave a hand or lean toward the screen and watch the spread around the tone grow. Calibrating for 3 seconds; keep still.';
-  } catch(e){ msg.className='msg warn'; msg.textContent='The microphone is blocked here ('+(e.name||'not allowed')+'). Allow microphone access in your browser's address bar and try again, or press Simulate to see how it behaves.'; }
+  } catch(e){ msg.className='msg warn'; msg.textContent='The microphone is blocked here ('+(e.name||'not allowed')+'). Allow microphone access in your browser address bar and try again, or press Simulate to see how it behaves.'; }
 }
 function stopSonar(){ try{ osc && osc.stop(); }catch(e){} if (micStream) micStream.getTracks().forEach(t=>t.stop()); if (ac) ac.close(); ac=an=osc=gain=micStream=null; sonarOn=false; $('sonarBtn').textContent='Start sonar'; $('pState').textContent='Off'; $('pDot').style.background=css('--muted'); }
 $('sonarBtn').onclick = startSonar;
